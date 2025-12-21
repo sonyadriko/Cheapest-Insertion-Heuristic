@@ -1,5 +1,5 @@
 import React from 'react';
-import { GoogleMap, LoadScript, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, Marker, Polyline } from '@react-google-maps/api';
 
 interface Delivery {
     id: number;
@@ -14,18 +14,6 @@ interface RouteMapProps {
 }
 
 const RouteMap: React.FC<RouteMapProps> = ({ deliveries }) => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-
-    if (!apiKey) {
-        return (
-            <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-                <p className="text-gray-600">
-                    Google Maps API key not configured. Please add VITE_GOOGLE_MAPS_API_KEY to .env file.
-                </p>
-            </div>
-        );
-    }
-
     if (deliveries.length === 0) {
         return (
             <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -50,43 +38,41 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries }) => {
     };
 
     return (
-        <LoadScript googleMapsApiKey={apiKey}>
-            <GoogleMap
-                mapContainerStyle={mapContainerStyle}
-                center={center}
-                zoom={12}
-                options={{
-                    zoomControl: true,
-                    streetViewControl: false,
-                    mapTypeControl: false,
-                    fullscreenControl: true,
-                }}
-            >
-                {/* Markers */}
-                {deliveries.map((delivery, index) => (
-                    <Marker
-                        key={delivery.id}
-                        position={{ lat: delivery.lat, lng: delivery.lng }}
-                        label={{
-                            text: (index + 1).toString(),
-                            color: 'white',
-                            fontWeight: 'bold',
-                        }}
-                        title={`${index + 1}. ${delivery.nama_penerima}`}
-                    />
-                ))}
-
-                {/* Route Polyline */}
-                <Polyline
-                    path={path}
-                    options={{
-                        strokeColor: '#0284c7',
-                        strokeOpacity: 0.8,
-                        strokeWeight: 4,
+        <GoogleMap
+            mapContainerStyle={mapContainerStyle}
+            center={center}
+            zoom={12}
+            options={{
+                zoomControl: true,
+                streetViewControl: false,
+                mapTypeControl: false,
+                fullscreenControl: true,
+            }}
+        >
+            {/* Markers */}
+            {deliveries.map((delivery, index) => (
+                <Marker
+                    key={delivery.id}
+                    position={{ lat: delivery.lat, lng: delivery.lng }}
+                    label={{
+                        text: (index + 1).toString(),
+                        color: 'white',
+                        fontWeight: 'bold',
                     }}
+                    title={`${index + 1}. ${delivery.nama_penerima}`}
                 />
-            </GoogleMap>
-        </LoadScript>
+            ))}
+
+            {/* Route Polyline */}
+            <Polyline
+                path={path}
+                options={{
+                    strokeColor: '#0284c7',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 4,
+                }}
+            />
+        </GoogleMap>
     );
 };
 

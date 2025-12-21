@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { pengirimanAPI, kurirAPI } from '../services/api';
 import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiMapPin } from 'react-icons/fi';
+import AddressSearchMap from '../components/AddressSearchMap';
 
 interface Pengiriman {
     id_kirim: number;
@@ -53,6 +54,12 @@ const PengirimanManagement: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!formData.latitude_kirim || !formData.longitude_kirim) {
+            alert('Silakan pilih lokasi di peta');
+            return;
+        }
+
         try {
             const data = {
                 nama_penerima: formData.nama_penerima,
@@ -224,7 +231,7 @@ const PengirimanManagement: React.FC = () => {
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">
                             {editingPengiriman ? 'Edit Pengiriman' : 'Tambah Pengiriman'}
                         </h2>
@@ -260,48 +267,30 @@ const PengirimanManagement: React.FC = () => {
                                     </select>
                                 </div>
                             </div>
+
+                            {/* Address Search and Map */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Alamat Penerima
-                                </label>
-                                <textarea
-                                    value={formData.alamat_penerima}
-                                    onChange={(e) => setFormData({ ...formData, alamat_penerima: e.target.value })}
-                                    className="input-field"
-                                    rows={2}
-                                    required
+                                <AddressSearchMap
+                                    onLocationSelect={(location) => {
+                                        setFormData({
+                                            ...formData,
+                                            alamat_penerima: location.address,
+                                            latitude_kirim: location.lat.toString(),
+                                            longitude_kirim: location.lng.toString(),
+                                        });
+                                    }}
+                                    initialLocation={
+                                        formData.latitude_kirim && formData.longitude_kirim
+                                            ? {
+                                                lat: parseFloat(formData.latitude_kirim),
+                                                lng: parseFloat(formData.longitude_kirim),
+                                            }
+                                            : undefined
+                                    }
+                                    initialAddress={formData.alamat_penerima}
                                 />
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Latitude
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={formData.latitude_kirim}
-                                        onChange={(e) => setFormData({ ...formData, latitude_kirim: e.target.value })}
-                                        className="input-field"
-                                        placeholder="-6.200000"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Longitude
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={formData.longitude_kirim}
-                                        onChange={(e) => setFormData({ ...formData, longitude_kirim: e.target.value })}
-                                        className="input-field"
-                                        placeholder="106.816666"
-                                        required
-                                    />
-                                </div>
-                            </div>
+
                             <div className="flex space-x-3 pt-4">
                                 <button type="submit" className="btn-primary flex-1">
                                     Simpan
