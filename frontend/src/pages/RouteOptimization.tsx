@@ -122,8 +122,8 @@ const RouteOptimization: React.FC = () => {
                                     <label
                                         key={p.id_kirim}
                                         className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${selectedPengiriman.includes(p.id_kirim)
-                                                ? 'border-primary-500 bg-primary-50'
-                                                : 'border-gray-200 hover:bg-gray-50'
+                                            ? 'border-primary-500 bg-primary-50'
+                                            : 'border-gray-200 hover:bg-gray-50'
                                             }`}
                                     >
                                         <input
@@ -215,7 +215,18 @@ const RouteOptimization: React.FC = () => {
                             {/* Map */}
                             <div className="card">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Visualisasi Rute</h3>
-                                <RouteMap deliveries={routeResult.ordered_deliveries} />
+                                <RouteMap
+                                    deliveries={routeResult.ordered_deliveries}
+                                    depot={
+                                        routeResult.kurir.latitude_kurir && routeResult.kurir.longitude_kurir
+                                            ? {
+                                                lat: routeResult.kurir.latitude_kurir,
+                                                lng: routeResult.kurir.longitude_kurir,
+                                                nama: routeResult.kurir.nama_kurir
+                                            }
+                                            : undefined
+                                    }
+                                />
                             </div>
                         </div>
                     ) : (

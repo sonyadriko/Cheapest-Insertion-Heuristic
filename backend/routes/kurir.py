@@ -44,7 +44,9 @@ def create_kurir():
     # Create new kurir
     new_kurir = Kurir(
         nama_kurir=data['nama_kurir'],
-        alamat_kurir=data['alamat_kurir']
+        alamat_kurir=data['alamat_kurir'],
+        latitude_kurir=data.get('latitude_kurir'),
+        longitude_kurir=data.get('longitude_kurir')
     )
     
     try:
@@ -82,6 +84,10 @@ def update_kurir(id):
         kurir.nama_kurir = data['nama_kurir']
     if 'alamat_kurir' in data:
         kurir.alamat_kurir = data['alamat_kurir']
+    if 'latitude_kurir' in data:
+        kurir.latitude_kurir = data['latitude_kurir']
+    if 'longitude_kurir' in data:
+        kurir.longitude_kurir = data['longitude_kurir']
     
     try:
         db.session.commit()

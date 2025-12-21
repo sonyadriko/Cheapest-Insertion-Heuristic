@@ -58,9 +58,12 @@ def optimize_route():
                 'alamat_penerima': p.alamat_penerima
             })
         
-        # For depot, we'll use the first delivery location as starting point
-        # In a real scenario, you'd geocode the kurir's address
-        depot_location = (delivery_locations[0]['lat'], delivery_locations[0]['lng'])
+        # Use kurir's location as depot (starting point)
+        if kurir.latitude_kurir and kurir.longitude_kurir:
+            depot_location = (float(kurir.latitude_kurir), float(kurir.longitude_kurir))
+        else:
+            # Fallback: use first delivery location if kurir has no coordinates
+            depot_location = (delivery_locations[0]['lat'], delivery_locations[0]['lng'])
         
         # Calculate optimal route
         cih = CheapestInsertionHeuristic()

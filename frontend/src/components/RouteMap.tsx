@@ -9,11 +9,18 @@ interface Delivery {
     lng: number;
 }
 
-interface RouteMapProps {
-    deliveries: Delivery[];
+interface DepotLocation {
+    lat: number;
+    lng: number;
+    nama: string;
 }
 
-const RouteMap: React.FC<RouteMapProps> = ({ deliveries }) => {
+interface RouteMapProps {
+    deliveries: Delivery[];
+    depot?: DepotLocation;
+}
+
+const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
     if (deliveries.length === 0) {
         return (
             <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -22,14 +29,20 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries }) => {
         );
     }
 
-    // Calculate center of map
+    // Calculate center of map (include depot if available)
+    const allPoints = depot
+        ? [depot, ...deliveries]
+        : deliveries;
+
     const center = {
-        lat: deliveries.reduce((sum, d) => sum + d.lat, 0) / deliveries.length,
-        lng: deliveries.reduce((sum, d) => sum + d.lng, 0) / deliveries.length,
+        lat: allPoints.reduce((sum, p) => sum + p.lat, 0) / allPoints.length,
+        lng: allPoints.reduce((sum, p) => sum + p.lng, 0) / allPoints.length,
     };
 
-    // Create path for polyline
-    const path = deliveries.map((d) => ({ lat: d.lat, lng: d.lng }));
+    // Create path for polyline (depot -> deliveries -> back to depot)
+    const path = depot
+        ? [{ lat: depot.lat, lng: depot.lng }, ...deliveries.map((d) => ({ lat: d.lat, lng: d.lng })), { lat: depot.lat, lng: depot.lng }]
+        : deliveries.map((d) => ({ lat: d.lat, lng: d.lng }));
 
     const mapContainerStyle = {
         width: '100%',
@@ -49,7 +62,19 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries }) => {
                 fullscreenControl: true,
             }}
         >
-            {/* Markers */}
+            {/* Depot Marker (Home/Start Point) */}
+            {depot && (
+                <Marker
+                    position={{ lat: depot.lat, lng: depot.lng }}
+                    label={{
+                        text: '🏠',
+                        fontSize: '24px',
+                    }}
+                    title={`Depot: ${depot.nama}`}
+                />
+            )}
+
+            {/* Delivery Markers */}
             {deliveries.map((delivery, index) => (
                 <Marker
                     key={delivery.id}

@@ -14,21 +14,29 @@ def seed_database():
         Pengiriman.query.delete()
         Kurir.query.delete()
         
-        # Add sample Kurir (Couriers)
-        kurir_data = [
-            {"nama_kurir": "Budi Santoso", "alamat_kurir": "Jl. Sudirman No. 123, Jakarta Pusat"},
-            {"nama_kurir": "Andi Wijaya", "alamat_kurir": "Jl. Gatot Subroto No. 45, Jakarta Selatan"},
-            {"nama_kurir": "Rudi Hermawan", "alamat_kurir": "Jl. Thamrin No. 67, Jakarta Pusat"},
-        ]
+        # Create kurir (couriers) with depot coordinates
+        kurir1 = Kurir(
+            nama_kurir='Budi Santoso',
+            alamat_kurir='Jl. Sudirman No. 123, Jakarta Pusat',
+            latitude_kurir=-6.2088,
+            longitude_kurir=106.8456
+        )
+        kurir2 = Kurir(
+            nama_kurir='Andi Wijaya',
+            alamat_kurir='Jl. Gatot Subroto No. 45, Jakarta Selatan',
+            latitude_kurir=-6.2297,
+            longitude_kurir=106.8253
+        )
+        kurir3 = Kurir(
+            nama_kurir='Rudi Hermawan',
+            alamat_kurir='Jl. Thamrin No. 67, Jakarta Pusat',
+            latitude_kurir=-6.1944,
+            longitude_kurir=106.8229
+        )
         
-        kurir_list = []
-        for data in kurir_data:
-            kurir = Kurir(**data)
-            db.session.add(kurir)
-            kurir_list.append(kurir)
-        
+        db.session.add_all([kurir1, kurir2, kurir3])
         db.session.flush()  # Get IDs
-        print(f"✓ Added {len(kurir_list)} couriers")
+        print(f"✓ Added 3 couriers with depot locations")
         
         # Add sample Pengiriman (Deliveries) - Jakarta area coordinates
         pengiriman_data = [

@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { kurirAPI } from '../services/api';
 import { FiPlus, FiEdit2, FiTrash2, FiSearch } from 'react-icons/fi';
+import AddressSearchMap from '../components/AddressSearchMap';
 
 interface Kurir {
     id_kurir: number;
     nama_kurir: string;
     alamat_kurir: string;
+    latitude_kurir?: number | null;
+    longitude_kurir?: number | null;
 }
 
 const KurirManagement: React.FC = () => {
@@ -14,7 +17,12 @@ const KurirManagement: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editingKurir, setEditingKurir] = useState<Kurir | null>(null);
-    const [formData, setFormData] = useState({ nama_kurir: '', alamat_kurir: '' });
+    const [formData, setFormData] = useState({
+        nama_kurir: '',
+        alamat_kurir: '',
+        latitude_kurir: '',
+        longitude_kurir: '',
+    });
 
     useEffect(() => {
         loadKurir();
@@ -33,11 +41,24 @@ const KurirManagement: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!formData.latitude_kurir || !formData.longitude_kurir) {
+            alert('Silakan pilih lokasi depot kurir di peta');
+            return;
+        }
+
         try {
+            const data = {
+                nama_kurir: formData.nama_kurir,
+                alamat_kurir: formData.alamat_kurir,
+                latitude_kurir: parseFloat(formData.latitude_kurir),
+                longitude_kurir: parseFloat(formData.longitude_kurir),
+            };
+
             if (editingKurir) {
-                await kurirAPI.update(editingKurir.id_kurir, formData);
+                await kurirAPI.update(editingKurir.id_kurir, data);
             } else {
-                await kurirAPI.create(formData);
+                await kurirAPI.create(data);
             }
             loadKurir();
             closeModal();
@@ -62,10 +83,20 @@ const KurirManagement: React.FC = () => {
     const openModal = (kurir?: Kurir) => {
         if (kurir) {
             setEditingKurir(kurir);
-            setFormData({ nama_kurir: kurir.nama_kurir, alamat_kurir: kurir.alamat_kurir });
+            setFormData({
+                nama_kurir: kurir.nama_kurir,
+                alamat_kurir: kurir.alamat_kurir,
+                latitude_kurir: kurir.latitude_kurir?.toString() || '',
+                longitude_kurir: kurir.longitude_kurir?.toString() || '',
+            });
         } else {
             setEditingKurir(null);
-            setFormData({ nama_kurir: '', alamat_kurir: '' });
+            setFormData({
+                nama_kurir: '',
+                alamat_kurir: '',
+                latitude_kurir: '',
+                longitude_kurir: '',
+            });
         }
         setShowModal(true);
     };
@@ -73,7 +104,6 @@ const KurirManagement: React.FC = () => {
     const closeModal = () => {
         setShowModal(false);
         setEditingKurir(null);
-        setFormData({ nama_kurir: '', alamat_kurir: '' });
     };
 
     const filteredKurir = kurirList.filter((kurir) =>
@@ -124,7 +154,7 @@ const KurirManagement: React.FC = () => {
                             <tr>
                                 <th>ID</th>
                                 <th>Nama Kurir</th>
-                                <th>Alamat</th>
+                                <th>Alamat Depot</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -168,7 +198,7 @@ const KurirManagement: React.FC = () => {
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl max-w-md w-full p-6">
+                    <div className="bg-white rounded-xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">
                             {editingKurir ? 'Edit Kurir' : 'Tambah Kurir'}
                         </h2>
@@ -185,19 +215,34 @@ const KurirManagement: React.FC = () => {
                                     required
                                 />
                             </div>
+
+                            {/* Address Search and Map for Depot Location */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Alamat
+                                    Lokasi Depot (Titik Awal Pengiriman)
                                 </label>
-                                <textarea
-                                    value={formData.alamat_kurir}
-                                    onChange={(e) => setFormData({ ...formData, alamat_kurir: e.target.value })}
-                                    className="input-field"
-                                    rows={3}
-                                    required
+                                <AddressSearchMap
+                                    onLocationSelect={(location) => {
+                                        setFormData({
+                                            ...formData,
+                                            alamat_kurir: location.address,
+                                            latitude_kurir: location.lat.toString(),
+                                            longitude_kurir: location.lng.toString(),
+                                        });
+                                    }}
+                                    initialLocation={
+                                        formData.latitude_kurir && formData.longitude_kurir
+                                            ? {
+                                                lat: parseFloat(formData.latitude_kurir),
+                                                lng: parseFloat(formData.longitude_kurir),
+                                            }
+                                            : undefined
+                                    }
+                                    initialAddress={formData.alamat_kurir}
                                 />
                             </div>
-                            <div className="flex space-x-3">
+
+                            <div className="flex space-x-3 pt-4">
                                 <button type="submit" className="btn-primary flex-1">
                                     Simpan
                                 </button>

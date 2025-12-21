@@ -34,6 +34,8 @@ class Kurir(db.Model):
     id_kurir = db.Column(db.Integer, primary_key=True)
     nama_kurir = db.Column(db.String(60), nullable=False)
     alamat_kurir = db.Column(db.String(100), nullable=False)
+    latitude_kurir = db.Column(db.Numeric(8, 6), nullable=True)
+    longitude_kurir = db.Column(db.Numeric(9, 6), nullable=True)
     
     # Relationship
     pengiriman = db.relationship('Pengiriman', backref='kurir', lazy=True)
@@ -42,7 +44,9 @@ class Kurir(db.Model):
         return {
             'id_kurir': self.id_kurir,
             'nama_kurir': self.nama_kurir,
-            'alamat_kurir': self.alamat_kurir
+            'alamat_kurir': self.alamat_kurir,
+            'latitude_kurir': float(self.latitude_kurir) if self.latitude_kurir else None,
+            'longitude_kurir': float(self.longitude_kurir) if self.longitude_kurir else None
         }
 
 
