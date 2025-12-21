@@ -22,12 +22,31 @@ const Layout: React.FC = () => {
         navigate('/login');
     };
 
-    const navigation = [
-        { name: 'Dashboard', href: '/', icon: FiHome },
-        { name: 'Kurir', href: '/kurir', icon: FiTruck },
-        { name: 'Pengiriman', href: '/pengiriman', icon: FiPackage },
-        { name: 'Route Optimization', href: '/route', icon: FiMap },
-    ];
+    // Role-based navigation
+    const getNavigation = () => {
+        const baseNav = [{ name: 'Dashboard', href: '/', icon: FiHome }];
+
+        if (user?.status_login === 'admin') {
+            return [
+                ...baseNav,
+                { name: 'Kurir', href: '/kurir', icon: FiTruck },
+                { name: 'Pengiriman', href: '/pengiriman', icon: FiPackage },
+                { name: 'Route Optimization', href: '/route', icon: FiMap },
+            ];
+        }
+
+        if (user?.status_login === 'spv') {
+            return [
+                ...baseNav,
+                { name: 'Route Optimization', href: '/route', icon: FiMap },
+            ];
+        }
+
+        // Kurir only sees Dashboard
+        return baseNav;
+    };
+
+    const navigation = getNavigation();
 
     const isActive = (path: string) => {
         if (path === '/') {
@@ -59,8 +78,8 @@ const Layout: React.FC = () => {
                                         key={item.name}
                                         to={item.href}
                                         className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(item.href)
-                                                ? 'bg-primary-50 text-primary-700'
-                                                : 'text-gray-600 hover:bg-gray-100'
+                                            ? 'bg-primary-50 text-primary-700'
+                                            : 'text-gray-600 hover:bg-gray-100'
                                             }`}
                                     >
                                         <Icon className="w-5 h-5 mr-2" />
@@ -111,8 +130,8 @@ const Layout: React.FC = () => {
                                         to={item.href}
                                         onClick={() => setIsMobileMenuOpen(false)}
                                         className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(item.href)
-                                                ? 'bg-primary-50 text-primary-700'
-                                                : 'text-gray-600 hover:bg-gray-100'
+                                            ? 'bg-primary-50 text-primary-700'
+                                            : 'text-gray-600 hover:bg-gray-100'
                                             }`}
                                     >
                                         <Icon className="w-5 h-5 mr-2" />
