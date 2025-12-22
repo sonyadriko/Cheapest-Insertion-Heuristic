@@ -12,10 +12,6 @@ class LoginUser(db.Model):
     password_login = db.Column(db.String(255), nullable=False)
     nama = db.Column(db.String(100), nullable=False)
     status_login = db.Column(db.String(20), nullable=False)  # admin, spv, kurir
-    id_kurir = db.Column(db.Integer, db.ForeignKey('data_kurir.id_kurir'), nullable=True)  # Link to kurir
-    
-    # Relationship
-    kurir = db.relationship('Kurir', backref='user', uselist=False)
     
     def set_password(self, password):
         self.password_login = generate_password_hash(password)
@@ -28,8 +24,7 @@ class LoginUser(db.Model):
             'id_login': self.id_login,
             'username_login': self.username_login,
             'nama': self.nama,
-            'status_login': self.status_login,
-            'id_kurir': self.id_kurir
+            'status_login': self.status_login
         }
 
 

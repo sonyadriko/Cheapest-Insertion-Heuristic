@@ -42,13 +42,15 @@ def get_my_deliveries():
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
     
-    # Check if user has associated kurir ID
-    if not current_user.id_kurir:
-        # User is not linked to a kurir record
+    # Find kurir associated with this user (by matching nama)
+    kurir = Kurir.query.filter_by(nama_kurir=current_user.nama).first()
+    
+    if not kurir:
+        # User is not a kurir or kurir record doesn't exist
         return jsonify([]), 200
     
     # Get all deliveries assigned to this kurir
-    pengiriman_list = Pengiriman.query.filter_by(id_kirim_kurir=current_user.id_kurir).all()
+    pengiriman_list = Pengiriman.query.filter_by(id_kirim_kurir=kurir.id_kurir).all()
     return jsonify([p.to_dict() for p in pengiriman_list]), 200
 
 

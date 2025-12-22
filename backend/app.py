@@ -10,8 +10,17 @@ def create_app():
     
     # Initialize extensions
     db.init_app(app)
-    CORS(app)
-    JWTManager(app)
+    jwt = JWTManager(app)
+    
+    # Configure CORS - Allow frontend origin
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
+        }
+    })
     
     # Register blueprints
     from routes.auth import auth_bp
@@ -48,16 +57,22 @@ def create_app():
             print("✓ Default status created")
         
         # Create default admin user if not exists
-        if LoginUser.query.filter_by(username_login='admin').first() is None:
-            admin = LoginUser(
-                username_login='admin',
-                nama='Administrator',
-                status_login='admin'
-            )
-            admin.set_password('admin123')
-            db.session.add(admin)
-            db.session.commit()
-            print("✓ Default admin user created (username: admin, password: admin123)")
+        try:
+            if LoginUser.query.filter_by(username_login='admin').first() is None:
+                admin = LoginUser(
+                    username_login='admin',
+                    nama='Administrator',
+                    status_login='admin',
+                    id_kurir=None
+                )
+                admin.set_password('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                print("✓ Default admin user created (username: admin, password: admin123)")
+        except Exception as e:
+            # Table might not exist yet or schema mismatch, skip
+            db.session.rollback()
+            pass
     
     return app
 
