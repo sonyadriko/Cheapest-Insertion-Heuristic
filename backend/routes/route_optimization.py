@@ -87,7 +87,13 @@ def optimize_route():
         ordered_deliveries = []
         for delivery_id in result['route']:
             delivery = next(d for d in delivery_locations if d['id'] == delivery_id)
-            ordered_deliveries.append(delivery)
+            ordered_deliveries.append({
+                'id_kirim': delivery['id'],
+                'nama_penerima': delivery['nama_penerima'],
+                'alamat_penerima': delivery['alamat_penerima'],
+                'latitude_kirim': delivery['lat'],
+                'longitude_kirim': delivery['lng']
+            })
         
         return jsonify({
             'message': 'Route optimized successfully',
@@ -95,6 +101,8 @@ def optimize_route():
             'route': result['route'],
             'ordered_deliveries': ordered_deliveries,
             'total_distance': result['total_distance'],
+            'route_segments': result.get('route_segments', []),
+            'distance_matrix': result.get('distance_matrix', {}),
             'hasil_id': hasil_rute.id_hasil
         }), 200
         

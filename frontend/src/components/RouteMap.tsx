@@ -2,11 +2,11 @@ import React from 'react';
 import { GoogleMap, Marker, Polyline } from '@react-google-maps/api';
 
 interface Delivery {
-    id: number;
+    id_kirim: number;
     nama_penerima: string;
     alamat_penerima: string;
-    lat: number;
-    lng: number;
+    latitude_kirim: number;
+    longitude_kirim: number;
 }
 
 interface DepotLocation {
@@ -31,8 +31,8 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
 
     // Calculate center of map (include depot if available)
     const allPoints = depot
-        ? [depot, ...deliveries]
-        : deliveries;
+        ? [depot, ...deliveries.map(d => ({ lat: d.latitude_kirim, lng: d.longitude_kirim }))]
+        : deliveries.map(d => ({ lat: d.latitude_kirim, lng: d.longitude_kirim }));
 
     const center = {
         lat: allPoints.reduce((sum, p) => sum + p.lat, 0) / allPoints.length,
@@ -41,8 +41,12 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
 
     // Create path for polyline (depot -> deliveries -> back to depot)
     const path = depot
-        ? [{ lat: depot.lat, lng: depot.lng }, ...deliveries.map((d) => ({ lat: d.lat, lng: d.lng })), { lat: depot.lat, lng: depot.lng }]
-        : deliveries.map((d) => ({ lat: d.lat, lng: d.lng }));
+        ? [
+            { lat: depot.lat, lng: depot.lng },
+            ...deliveries.map((d) => ({ lat: d.latitude_kirim, lng: d.longitude_kirim })),
+            { lat: depot.lat, lng: depot.lng }
+        ]
+        : deliveries.map((d) => ({ lat: d.latitude_kirim, lng: d.longitude_kirim }));
 
     const mapContainerStyle = {
         width: '100%',
@@ -65,6 +69,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
             {/* Depot Marker (Home/Start Point) */}
             {depot && (
                 <Marker
+                    key="depot"
                     position={{ lat: depot.lat, lng: depot.lng }}
                     label={{
                         text: '🏠',
@@ -77,8 +82,8 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
             {/* Delivery Markers */}
             {deliveries.map((delivery, index) => (
                 <Marker
-                    key={delivery.id}
-                    position={{ lat: delivery.lat, lng: delivery.lng }}
+                    key={`delivery-${delivery.id_kirim}`}
+                    position={{ lat: delivery.latitude_kirim, lng: delivery.longitude_kirim }}
                     label={{
                         text: (index + 1).toString(),
                         color: 'white',
@@ -90,6 +95,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
 
             {/* Route Polyline */}
             <Polyline
+                key="route-path"
                 path={path}
                 options={{
                     strokeColor: '#0284c7',

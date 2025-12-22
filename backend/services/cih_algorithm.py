@@ -85,21 +85,56 @@ class CheapestInsertionHeuristic:
         # Add return to depot
         route_indices.append(0)
         
-        # Calculate total distance
-        total_distance = 0
-        for i in range(len(route_indices) - 1):
-            total_distance += distance_matrix[route_indices[i]][route_indices[i + 1]]
+        # Convert route indices to delivery locations (including depot for full route)
+        full_route_locations = [all_locations[idx] for idx in route_indices]
         
-        # Convert route indices to delivery IDs (skip depot indices)
-        delivery_route = []
-        for idx in route_indices:
-            if idx > 0:  # Skip depot (index 0)
-                delivery_route.append(delivery_locations[idx - 1]['id'])
+        # Calculate total distance and route segments
+        total_distance = 0
+        route_segments = []
+        
+        # Helper to get original delivery location details or 'Depot'
+        def get_location_details(idx):
+            if idx == 0:
+                return {'id': 'Depot', 'name': 'Start Point', 'lat': depot_location[0], 'lng': depot_location[1]}
+            else:
+                original_loc = delivery_locations[idx - 1]
+                return {'id': original_loc['id'], 'name': original_loc.get('nama_penerima', f"Delivery {original_loc['id']}"), 'lat': original_loc['lat'], 'lng': original_loc['lng']}
+
+        for i in range(len(route_indices) - 1):
+            from_idx = route_indices[i]
+            to_idx = route_indices[i+1]
+            
+            from_details = get_location_details(from_idx)
+            to_details = get_location_details(to_idx)
+            
+            distance = distance_matrix[from_idx][to_idx]
+            total_distance += distance
+            
+            route_segments.append({
+                'from_id': from_details['id'],
+                'to_id': to_details['id'],
+                'from_name': from_details['name'],
+                'to_name': to_details['name'],
+                'distance': round(distance, 2)
+            })
+        
+        # Build distance matrix for all points (depot + deliveries)
+        all_points_for_matrix = [{'name': 'Depot', 'lat': depot_location[0], 'lng': depot_location[1]}]
+        for i, loc in enumerate(delivery_locations):
+            all_points_for_matrix.append({'name': loc.get('nama_penerima', f"Delivery {loc['id']}"), 'lat': loc['lat'], 'lng': loc['lng']})
+        
+        # The distance_matrix from Google Maps already contains all necessary distances
+        # We just need to format it with labels
         
         return {
-            'route': delivery_route,
+            'route': [delivery_locations[idx - 1]['id'] for idx in route_indices if idx > 0], # Only delivery IDs
             'total_distance': round(total_distance, 2),
-            'route_with_depot': route_indices
+            'route_segments': route_segments,
+            'distance_matrix': {
+                'labels': [p['name'] for p in all_points_for_matrix],
+                'matrix': [[round(dist, 2) for dist in row] for row in distance_matrix]
+            },
+            'route_with_depot_indices': route_indices # For internal debugging/understanding
         }
     
     def calculate_route_distance(self, locations):

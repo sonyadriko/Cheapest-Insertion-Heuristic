@@ -6,6 +6,8 @@ import RouteMap from '../components/RouteMap';
 interface Kurir {
     id_kurir: number;
     nama_kurir: string;
+    latitude_kurir?: number;
+    longitude_kurir?: number;
 }
 
 interface Pengiriman {
@@ -16,10 +18,25 @@ interface Pengiriman {
     longitude_kirim: number;
 }
 
+interface RouteSegment {
+    from: string;
+    to: string;
+    from_name: string;
+    to_name: string;
+    distance: number;
+}
+
+interface DistanceMatrix {
+    labels: string[];
+    matrix: number[][];
+}
+
 interface RouteResult {
     route: number[];
     ordered_deliveries: Pengiriman[];
     total_distance: number;
+    route_segments?: RouteSegment[];
+    distance_matrix?: DistanceMatrix;
     kurir: Kurir;
 }
 
@@ -112,31 +129,40 @@ const RouteOptimization: React.FC = () => {
                     {/* Pengiriman Selection */}
                     <div className="card">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                            Pilih Pengiriman ({selectedPengiriman.length})
+                            Pilih Pengiriman ({selectedPengiriman.length} dipilih)
                         </h3>
                         <div className="space-y-2 max-h-96 overflow-y-auto">
                             {pengirimanList.length === 0 ? (
-                                <p className="text-gray-500 text-sm">Tidak ada pengiriman yang belum ditugaskan</p>
+                                <p className="text-gray-500 text-sm text-center py-4">
+                                    Tidak ada pengiriman yang belum ditugaskan
+                                </p>
                             ) : (
-                                pengirimanList.map((p) => (
-                                    <label
-                                        key={p.id_kirim}
-                                        className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${selectedPengiriman.includes(p.id_kirim)
-                                            ? 'border-primary-500 bg-primary-50'
-                                            : 'border-gray-200 hover:bg-gray-50'
+                                pengirimanList.map((pengiriman) => (
+                                    <div
+                                        key={pengiriman.id_kirim}
+                                        onClick={() => togglePengiriman(pengiriman.id_kirim)}
+                                        className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedPengiriman.includes(pengiriman.id_kirim)
+                                            ? 'border-primary-600 bg-primary-50'
+                                            : 'border-gray-200 hover:border-gray-300'
                                             }`}
                                     >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedPengiriman.includes(p.id_kirim)}
-                                            onChange={() => togglePengiriman(p.id_kirim)}
-                                            className="mt-1 mr-3"
-                                        />
-                                        <div className="flex-1">
-                                            <p className="font-medium text-gray-900">{p.nama_penerima}</p>
-                                            <p className="text-sm text-gray-600 line-clamp-2">{p.alamat_penerima}</p>
+                                        <div className="flex items-start">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedPengiriman.includes(pengiriman.id_kirim)}
+                                                onChange={() => { }}
+                                                className="mt-1 mr-3"
+                                            />
+                                            <div className="flex-1">
+                                                <p className="font-medium text-gray-900">
+                                                    {pengiriman.nama_penerima}
+                                                </p>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    {pengiriman.alamat_penerima}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </label>
+                                    </div>
                                 ))
                             )}
                         </div>
@@ -146,7 +172,7 @@ const RouteOptimization: React.FC = () => {
                     <button
                         onClick={handleCalculateRoute}
                         disabled={isCalculating || !selectedKurir || selectedPengiriman.length === 0}
-                        className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="btn-primary w-full flex items-center justify-center"
                     >
                         {isCalculating ? (
                             <>
@@ -166,46 +192,72 @@ const RouteOptimization: React.FC = () => {
                 <div className="lg:col-span-2">
                     {routeResult ? (
                         <div className="space-y-6">
-                            {/* Summary */}
-                            <div className="card">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-semibold text-gray-900">Hasil Optimasi</h3>
-                                    <div className="flex items-center text-green-600">
-                                        <FiCheck className="mr-2" />
-                                        <span className="font-medium">Berhasil</span>
+                            {/* Statistics Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="card bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm text-blue-600 font-medium">Total Jarak</p>
+                                            <p className="text-3xl font-bold text-blue-900 mt-1">
+                                                {routeResult.total_distance.toFixed(2)}
+                                            </p>
+                                            <p className="text-xs text-blue-600 mt-1">kilometer</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                                            <FiMap className="text-white text-2xl" />
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-sm text-gray-600">Kurir</p>
-                                        <p className="text-lg font-semibold text-gray-900">
-                                            {routeResult.kurir.nama_kurir}
-                                        </p>
+
+                                <div className="card bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm text-green-600 font-medium">Jumlah Pengiriman</p>
+                                            <p className="text-3xl font-bold text-green-900 mt-1">
+                                                {routeResult.ordered_deliveries.length}
+                                            </p>
+                                            <p className="text-xs text-green-600 mt-1">lokasi</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                                            <FiCheck className="text-white text-2xl" />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-600">Total Jarak</p>
-                                        <p className="text-lg font-semibold text-primary-600">
-                                            {routeResult.total_distance} km
-                                        </p>
+                                </div>
+
+                                <div className="card bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm text-purple-600 font-medium">Kurir</p>
+                                            <p className="text-lg font-bold text-purple-900 mt-1 truncate">
+                                                {routeResult.kurir.nama_kurir}
+                                            </p>
+                                            <p className="text-xs text-purple-600 mt-1">ditugaskan</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center text-white text-xl font-bold">
+                                            {routeResult.kurir.nama_kurir.charAt(0)}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Route Order */}
+                            {/* Route Details */}
                             <div className="card">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Urutan Pengiriman</h3>
                                 <div className="space-y-3">
                                     {routeResult.ordered_deliveries.map((delivery, index) => (
                                         <div
-                                            key={delivery.id}
-                                            className="flex items-start p-3 bg-gray-50 rounded-lg"
+                                            key={delivery.id_kirim}
+                                            className="flex items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                                         >
                                             <div className="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold mr-3">
                                                 {index + 1}
                                             </div>
                                             <div className="flex-1">
                                                 <p className="font-medium text-gray-900">{delivery.nama_penerima}</p>
-                                                <p className="text-sm text-gray-600">{delivery.alamat_penerima}</p>
+                                                <p className="text-sm text-gray-600 mt-1">{delivery.alamat_penerima}</p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    📍 {delivery.latitude_kirim.toFixed(6)}, {delivery.longitude_kirim.toFixed(6)}
+                                                </p>
                                             </div>
                                         </div>
                                     ))}
@@ -228,6 +280,83 @@ const RouteOptimization: React.FC = () => {
                                     }
                                 />
                             </div>
+
+                            {/* Route Segments Table */}
+                            {routeResult.route_segments && routeResult.route_segments.length > 0 && (
+                                <div className="card">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Detail Segmen Rute</h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Arc</th>
+                                                    <th>Dari</th>
+                                                    <th>Ke</th>
+                                                    <th className="text-right">Jarak (km)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {routeResult.route_segments.map((segment, index) => (
+                                                    <tr key={index}>
+                                                        <td className="font-mono">({segment.from}, {segment.to})</td>
+                                                        <td className="text-sm">{segment.from_name}</td>
+                                                        <td className="text-sm">{segment.to_name}</td>
+                                                        <td className="text-right font-medium">{segment.distance.toFixed(3)}</td>
+                                                    </tr>
+                                                ))}
+                                                <tr className="bg-primary-50 font-bold">
+                                                    <td colSpan={3} className="text-right">Total Jarak</td>
+                                                    <td className="text-right text-primary-600">
+                                                        {routeResult.total_distance.toFixed(3)} km
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Distance Matrix */}
+                            {routeResult.distance_matrix && routeResult.distance_matrix.labels && (
+                                <div className="card">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Matriks Jarak</h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="table text-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th className="bg-gray-100"></th>
+                                                    {routeResult.distance_matrix.labels.map((label) => (
+                                                        <th key={label} className="bg-gray-100 text-center font-mono">
+                                                            {label}
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {routeResult.distance_matrix.matrix.map((row, i) => (
+                                                    <tr key={i}>
+                                                        <td className="bg-gray-100 font-mono font-bold">
+                                                            {routeResult.distance_matrix!.labels[i]}
+                                                        </td>
+                                                        {row.map((distance, j) => (
+                                                            <td
+                                                                key={j}
+                                                                className={`text-center font-mono ${i === j ? 'bg-gray-200 font-bold' : ''
+                                                                    }`}
+                                                            >
+                                                                {distance === 0 ? '0' : distance.toFixed(3)}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        * Jarak dalam kilometer, dihitung menggunakan Google Maps Distance Matrix API
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="card h-full flex items-center justify-center">
