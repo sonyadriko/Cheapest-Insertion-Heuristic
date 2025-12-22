@@ -47,6 +47,7 @@ export const pengirimanAPI = {
     getById: (id: number) => api.get(`/pengiriman/${id}`),
     getByKurir: (kurirId: number) => api.get(`/pengiriman/kurir/${kurirId}`),
     getUnassigned: () => api.get('/pengiriman/unassigned'),
+    getMyDeliveries: () => api.get('/pengiriman/my-deliveries'),
     create: (data: any) => api.post('/pengiriman', data),
     update: (id: number, data: any) => api.put(`/pengiriman/${id}`, data),
     delete: (id: number) => api.delete(`/pengiriman/${id}`),

@@ -41,10 +41,8 @@ const Dashboard: React.FC = () => {
                 });
             } else if (user?.status_login === 'kurir') {
                 // Kurir: Load only their deliveries
-                const pengirimanRes = await pengirimanAPI.getAll();
-                const myDeliveries = pengirimanRes.data.filter(
-                    (p: any) => p.kurir?.nama_kurir === user.nama
-                );
+                const pengirimanRes = await pengirimanAPI.getMyDeliveries();
+                const myDeliveries = pengirimanRes.data;
                 const completed = myDeliveries.filter((p: any) => p.status?.status_kirim === 'Delivered');
 
                 setStats({

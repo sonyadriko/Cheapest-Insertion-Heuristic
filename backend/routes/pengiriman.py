@@ -26,9 +26,29 @@ def get_pengiriman(id):
 
 @pengiriman_bp.route('/kurir/<int:kurir_id>', methods=['GET'])
 @jwt_required()
-def get_pengiriman_by_kurir(kurir_id):
-    """Get all pengiriman for a specific kurir"""
+def get_by_kurir(kurir_id):
+    """Get deliveries assigned to a specific kurir"""
     pengiriman_list = Pengiriman.query.filter_by(id_kirim_kurir=kurir_id).all()
+    return jsonify([p.to_dict() for p in pengiriman_list]), 200
+
+
+@pengiriman_bp.route('/my-deliveries', methods=['GET'])
+@jwt_required()
+def get_my_deliveries():
+    """Get deliveries for the currently logged-in kurir"""
+    current_user_id = int(get_jwt_identity())
+    current_user = LoginUser.query.get(current_user_id)
+    
+    if not current_user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Check if user has associated kurir ID
+    if not current_user.id_kurir:
+        # User is not linked to a kurir record
+        return jsonify([]), 200
+    
+    # Get all deliveries assigned to this kurir
+    pengiriman_list = Pengiriman.query.filter_by(id_kirim_kurir=current_user.id_kurir).all()
     return jsonify([p.to_dict() for p in pengiriman_list]), 200
 
 
