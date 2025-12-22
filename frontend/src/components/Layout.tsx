@@ -8,7 +8,8 @@ import {
     FiMap,
     FiLogOut,
     FiMenu,
-    FiX
+    FiX,
+    FiUser
 } from 'react-icons/fi';
 
 const Layout: React.FC = () => {
@@ -31,6 +32,7 @@ const Layout: React.FC = () => {
                 ...baseNav,
                 { name: 'Kurir', href: '/kurir', icon: FiTruck },
                 { name: 'Pengiriman', href: '/pengiriman', icon: FiPackage },
+                { name: 'User Management', href: '/users', icon: FiUser },
                 { name: 'Route Optimization', href: '/route', icon: FiMap },
             ];
         }

@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import KurirManagement from './pages/KurirManagement';
 import PengirimanManagement from './pages/PengirimanManagement';
 import RouteOptimization from './pages/RouteOptimization';
+import UserManagement from './pages/UserManagement';
 
 const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ['places'];
 
@@ -43,6 +44,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <PengirimanManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="users"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <UserManagement />
                   </ProtectedRoute>
                 }
               />

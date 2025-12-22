@@ -60,4 +60,13 @@ export const routeAPI = {
     getDetail: (id: number) => api.get(`/route/history/${id}`),
 };
 
+// User API
+export const userAPI = {
+    getAll: () => api.get('/users'),
+    create: (data: any) => api.post('/users', data),
+    update: (id: number, data: any) => api.put(`/users/${id}`, data),
+    delete: (id: number) => api.delete(`/users/${id}`),
+    resetPassword: (id: number, data: any) => api.put(`/users/${id}/password`, data)
+};
+
 export default api;

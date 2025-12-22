@@ -18,11 +18,13 @@ def create_app():
     from routes.kurir import kurir_bp
     from routes.pengiriman import pengiriman_bp
     from routes.route_optimization import route_bp
+    from routes.user_routes import user_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(kurir_bp, url_prefix='/api/kurir')
     app.register_blueprint(pengiriman_bp, url_prefix='/api/pengiriman')
     app.register_blueprint(route_bp, url_prefix='/api/route')
+    app.register_blueprint(user_bp, url_prefix='/api/users')
     
     # Health check endpoint
     @app.route('/api/health', methods=['GET'])
