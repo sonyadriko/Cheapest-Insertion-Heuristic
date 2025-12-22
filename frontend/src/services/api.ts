@@ -28,8 +28,15 @@ api.interceptors.request.use(
 export const authAPI = {
     login: (username: string, password: string) =>
         api.post('/auth/login', { username, password }),
-    register: (data: any) => api.post('/auth/register', data),
-    getCurrentUser: () => api.get('/auth/me'),
+    getCurrentUser: () => {
+        const user = localStorage.getItem('user');
+        return Promise.resolve({ data: user ? JSON.parse(user) : null });
+    },
+    logout: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        return Promise.resolve();
+    },
 };
 
 // Kurir API
@@ -53,17 +60,19 @@ export const pengirimanAPI = {
     delete: (id: number) => api.delete(`/pengiriman/${id}`),
 };
 
-// Route API
+// Route Optimization API
 export const routeAPI = {
     optimize: (data: { kurir_id: number; pengiriman_ids: number[] }) =>
         api.post('/route/optimize', data),
     getHistory: () => api.get('/route/history'),
+    getMyRoute: () => api.get('/route/my-route'),
     getDetail: (id: number) => api.get(`/route/history/${id}`),
 };
 
-// User API
+// User Management API
 export const userAPI = {
     getAll: () => api.get('/users'),
+    getById: (id: number) => api.get(`/users/${id}`),
     create: (data: any) => api.post('/users', data),
     update: (id: number, data: any) => api.put(`/users/${id}`, data),
     delete: (id: number) => api.delete(`/users/${id}`),

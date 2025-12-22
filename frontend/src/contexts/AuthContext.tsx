@@ -32,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 } catch (error) {
                     console.error('Failed to load user:', error);
                     localStorage.removeItem('token');
+                    localStorage.removeItem('user');
                     setToken(null);
                 }
             }
@@ -47,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { access_token, user: userData } = response.data;
 
             localStorage.setItem('token', access_token);
+            localStorage.setItem('user', JSON.stringify(userData));
             setToken(access_token);
             setUser(userData);
         } catch (error: any) {
@@ -56,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const logout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
         setToken(null);
         setUser(null);
     };

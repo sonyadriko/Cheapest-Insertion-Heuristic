@@ -52,28 +52,28 @@ def optimize_route():
         for p in pengiriman_list:
             delivery_locations.append({
                 'id': p.id_kirim,
-                'lat': float(p.latitude_kirim),
-                'lng': float(p.longitude_kirim),
+                'lat': p.latitude_kirim,
+                'lng': p.longitude_kirim,
                 'nama_penerima': p.nama_penerima,
                 'alamat_penerima': p.alamat_penerima
             })
         
-        # Use kurir's location as depot (starting point)
+        # Get depot location (kurir's base)
         if kurir.latitude_kurir and kurir.longitude_kurir:
-            depot_location = (float(kurir.latitude_kurir), float(kurir.longitude_kurir))
+            depot = (kurir.latitude_kurir, kurir.longitude_kurir)
         else:
-            # Fallback: use first delivery location if kurir has no coordinates
-            depot_location = (delivery_locations[0]['lat'], delivery_locations[0]['lng'])
+            # Default depot if not set
+            depot = (-6.2088, 106.8456)  # Jakarta center
         
-        # Calculate optimal route
+        # Run CIH algorithm
         cih = CheapestInsertionHeuristic()
-        result = cih.calculate_optimal_route(depot_location, delivery_locations)
+        result = cih.optimize(delivery_locations, depot)
         
-        # Save result to database
+        # Save to database
         hasil_rute = HasilRute(
             id_kurir=kurir.id_kurir,
-            urutan_pengiriman=json.dumps(result['route']),
-            total_jarak=result['total_distance']
+            total_jarak=result['total_distance'],
+            urutan_pengiriman=json.dumps(result['route'])
         )
         db.session.add(hasil_rute)
         
@@ -108,46 +108,74 @@ def optimize_route():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Route optimization failed: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
 
 @route_bp.route('/history', methods=['GET'])
 @jwt_required()
-def get_route_history():
-    """Get all route optimization history"""
+def get_history():
+    """Get route optimization history"""
     hasil_list = HasilRute.query.order_by(HasilRute.created_at.desc()).all()
-    
-    results = []
-    for hasil in hasil_list:
-        kurir = Kurir.query.get(hasil.id_kurir)
-        hasil_dict = hasil.to_dict()
-        hasil_dict['kurir'] = kurir.to_dict() if kurir else None
-        results.append(hasil_dict)
-    
-    return jsonify(results), 200
+    return jsonify([h.to_dict() for h in hasil_list]), 200
 
 
-@route_bp.route('/history/<int:id>', methods=['GET'])
+@route_bp.route('/my-route', methods=['GET'])
 @jwt_required()
-def get_route_detail(id):
-    """Get detailed route optimization result"""
-    hasil = HasilRute.query.get(id)
+def get_my_route():
+    """Get the latest optimized route for the currently logged-in kurir"""
+    current_user_id = int(get_jwt_identity())
+    current_user = LoginUser.query.get(current_user_id)
     
-    if not hasil:
-        return jsonify({'error': 'Route result not found'}), 404
+    if not current_user:
+        return jsonify({'error': 'User not found'}), 404
     
-    kurir = Kurir.query.get(hasil.id_kurir)
-    pengiriman_ids = json.loads(hasil.urutan_pengiriman)
+    # Find kurir associated with this user
+    kurir = Kurir.query.filter_by(nama_kurir=current_user.nama).first()
     
-    # Get delivery details
-    deliveries = []
-    for p_id in pengiriman_ids:
-        pengiriman = Pengiriman.query.get(p_id)
-        if pengiriman:
-            deliveries.append(pengiriman.to_dict())
+    if not kurir:
+        return jsonify({'error': 'Kurir not found'}), 404
     
-    result = hasil.to_dict()
-    result['kurir'] = kurir.to_dict() if kurir else None
-    result['deliveries'] = deliveries
+    # Get latest route for this kurir
+    latest_route = HasilRute.query.filter_by(id_kurir=kurir.id_kurir)\
+        .order_by(HasilRute.id_hasil.desc()).first()
     
-    return jsonify(result), 200
+    if not latest_route:
+        return jsonify({'message': 'No route assigned yet', 'route': None}), 200
+    
+    # Get all deliveries for this kurir
+    deliveries = Pengiriman.query.filter_by(id_kirim_kurir=kurir.id_kurir).all()
+    
+    # Parse route order from hasil_rute
+    try:
+        route_order = json.loads(latest_route.urutan_pengiriman)
+        # Sort deliveries by route order
+        delivery_dict = {d.id_kirim: d for d in deliveries}
+        ordered_deliveries = []
+        for delivery_id in route_order:
+            if delivery_id in delivery_dict:
+                d = delivery_dict[delivery_id]
+                ordered_deliveries.append({
+                    'id_kirim': d.id_kirim,
+                    'nama_penerima': d.nama_penerima,
+                    'alamat_penerima': d.alamat_penerima,
+                    'latitude_kirim': d.latitude_kirim,
+                    'longitude_kirim': d.longitude_kirim,
+                    'status': d.status.to_dict() if d.status else None
+                })
+    except:
+        # Fallback to database order if route parsing fails
+        ordered_deliveries = [{
+            'id_kirim': d.id_kirim,
+            'nama_penerima': d.nama_penerima,
+            'alamat_penerima': d.alamat_penerima,
+            'latitude_kirim': d.latitude_kirim,
+            'longitude_kirim': d.longitude_kirim,
+            'status': d.status.to_dict() if d.status else None
+        } for d in deliveries]
+    
+    return jsonify({
+        'kurir': kurir.to_dict(),
+        'route': latest_route.to_dict(),
+        'ordered_deliveries': ordered_deliveries,
+        'total_distance': latest_route.total_jarak
+    }), 200
