@@ -31,22 +31,28 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
 
     // Calculate center of map (include depot if available)
     const allPoints = depot
-        ? [depot, ...deliveries.map(d => ({ lat: d.latitude_kirim, lng: d.longitude_kirim }))]
-        : deliveries.map(d => ({ lat: d.latitude_kirim, lng: d.longitude_kirim }));
+        ? [
+            { lat: Number(depot.lat), lng: Number(depot.lng) },
+            ...deliveries.map(d => ({ lat: Number(d.latitude_kirim), lng: Number(d.longitude_kirim) }))
+        ]
+        : deliveries.map(d => ({ lat: Number(d.latitude_kirim), lng: Number(d.longitude_kirim) }));
 
-    const center = {
-        lat: allPoints.reduce((sum, p) => sum + p.lat, 0) / allPoints.length,
-        lng: allPoints.reduce((sum, p) => sum + p.lng, 0) / allPoints.length,
-    };
+    // Filter out invalid points
+    const validPoints = allPoints.filter(p => !isNaN(p.lat) && !isNaN(p.lng));
 
-    // Create path for polyline (depot -> deliveries -> back to depot)
+    const center = validPoints.length > 0 ? {
+        lat: validPoints.reduce((sum, p) => sum + p.lat, 0) / validPoints.length,
+        lng: validPoints.reduce((sum, p) => sum + p.lng, 0) / validPoints.length,
+    } : { lat: -6.2, lng: 106.8 }; // Default fallback
+
+    // Create path for polyline
     const path = depot
         ? [
-            { lat: depot.lat, lng: depot.lng },
-            ...deliveries.map((d) => ({ lat: d.latitude_kirim, lng: d.longitude_kirim })),
-            { lat: depot.lat, lng: depot.lng }
+            { lat: Number(depot.lat), lng: Number(depot.lng) },
+            ...deliveries.map((d) => ({ lat: Number(d.latitude_kirim), lng: Number(d.longitude_kirim) })),
+            { lat: Number(depot.lat), lng: Number(depot.lng) }
         ]
-        : deliveries.map((d) => ({ lat: d.latitude_kirim, lng: d.longitude_kirim }));
+        : deliveries.map((d) => ({ lat: Number(d.latitude_kirim), lng: Number(d.longitude_kirim) }));
 
     const mapContainerStyle = {
         width: '100%',
@@ -70,7 +76,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
             {depot && (
                 <Marker
                     key="depot"
-                    position={{ lat: depot.lat, lng: depot.lng }}
+                    position={{ lat: Number(depot.lat), lng: Number(depot.lng) }}
                     label={{
                         text: '🏠',
                         fontSize: '24px',
@@ -83,7 +89,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
             {deliveries.map((delivery, index) => (
                 <Marker
                     key={`delivery-${delivery.id_kirim}`}
-                    position={{ lat: delivery.latitude_kirim, lng: delivery.longitude_kirim }}
+                    position={{ lat: Number(delivery.latitude_kirim), lng: Number(delivery.longitude_kirim) }}
                     label={{
                         text: (index + 1).toString(),
                         color: 'white',

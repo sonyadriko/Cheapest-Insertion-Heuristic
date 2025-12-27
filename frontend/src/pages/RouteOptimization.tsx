@@ -256,7 +256,7 @@ const RouteOptimization: React.FC = () => {
                                                 <p className="font-medium text-gray-900">{delivery.nama_penerima}</p>
                                                 <p className="text-sm text-gray-600 mt-1">{delivery.alamat_penerima}</p>
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    📍 {delivery.latitude_kirim.toFixed(6)}, {delivery.longitude_kirim.toFixed(6)}
+                                                    📍 {Number(delivery.latitude_kirim).toFixed(6)}, {Number(delivery.longitude_kirim).toFixed(6)}
                                                 </p>
                                             </div>
                                         </div>

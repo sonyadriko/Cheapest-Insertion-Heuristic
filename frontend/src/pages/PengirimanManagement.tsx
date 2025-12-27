@@ -191,7 +191,7 @@ const PengirimanManagement: React.FC = () => {
                                     <td>
                                         <div className="flex items-center text-xs text-gray-600">
                                             <FiMapPin className="mr-1" />
-                                            {p.latitude_kirim.toFixed(4)}, {p.longitude_kirim.toFixed(4)}
+                                            {Number(p.latitude_kirim).toFixed(4)}, {Number(p.longitude_kirim).toFixed(4)}
                                         </div>
                                     </td>
                                     <td>

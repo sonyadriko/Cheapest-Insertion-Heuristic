@@ -67,7 +67,7 @@ def optimize_route():
         
         # Run CIH algorithm
         cih = CheapestInsertionHeuristic()
-        result = cih.optimize(delivery_locations, depot)
+        result = cih.calculate_optimal_route(depot, delivery_locations)
         
         # Save to database
         hasil_rute = HasilRute(
