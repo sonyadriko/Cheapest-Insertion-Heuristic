@@ -103,8 +103,8 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
             {/* Delivery Markers */}
             {deliveryPoints.map((point, index) => (
                 <Marker
-                    key={`delivery-${delivery.id_kirim}`}
-                    position={{ lat: Number(delivery.latitude_kirim), lng: Number(delivery.longitude_kirim) }}
+                    key={`delivery-${point.id}`}
+                    position={{ lat: point.lat, lng: point.lng }}
                     label={{
                         text: (index + 1).toString(),
                         color: 'white',
