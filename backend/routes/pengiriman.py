@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Pengiriman, LoginUser, Kurir
+from datetime import datetime
 
 pengiriman_bp = Blueprint('pengiriman', __name__)
 
@@ -27,8 +28,19 @@ def get_pengiriman(id):
 @pengiriman_bp.route('/kurir/<int:kurir_id>', methods=['GET'])
 @jwt_required()
 def get_by_kurir(kurir_id):
-    """Get deliveries assigned to a specific kurir"""
-    pengiriman_list = Pengiriman.query.filter_by(id_kirim_kurir=kurir_id).all()
+    """Get deliveries assigned to a specific kurir, optionally filtered by date"""
+    date_str = request.args.get('tanggal')
+    
+    query = Pengiriman.query.filter_by(id_kirim_kurir=kurir_id)
+    
+    if date_str:
+        try:
+            tanggal = datetime.strptime(date_str, '%Y-%m-%d').date()
+            query = query.filter_by(tanggal_kirim=tanggal)
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+    
+    pengiriman_list = query.all()
     return jsonify([p.to_dict() for p in pengiriman_list]), 200
 
 
@@ -57,8 +69,31 @@ def get_my_deliveries():
 @pengiriman_bp.route('/unassigned', methods=['GET'])
 @jwt_required()
 def get_unassigned_pengiriman():
-    """Get all unassigned pengiriman (no kurir assigned)"""
-    pengiriman_list = Pengiriman.query.filter_by(id_kirim_kurir=None).all()
+    """Get all unassigned pengiriman (no kurir assigned), optionally filtered by date
+    
+    If date is provided, returns deliveries that:
+    - Have the matching date, OR
+    - Have no date set (NULL) - these are considered "unscheduled" and available for any date
+    """
+    date_str = request.args.get('tanggal')
+    
+    query = Pengiriman.query.filter_by(id_kirim_kurir=None)
+    
+    if date_str:
+        try:
+            tanggal = datetime.strptime(date_str, '%Y-%m-%d').date()
+            # Include deliveries with matching date OR no date set (unscheduled)
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    Pengiriman.tanggal_kirim == tanggal,
+                    Pengiriman.tanggal_kirim.is_(None)
+                )
+            )
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+    
+    pengiriman_list = query.all()
     return jsonify([p.to_dict() for p in pengiriman_list]), 200
 
 

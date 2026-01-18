@@ -222,21 +222,21 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Link to="/route-optimization" className="card hover:shadow-lg transition-shadow cursor-pointer">
+                    <Link to="/kurir-view" className="card hover:shadow-lg transition-shadow cursor-pointer">
+                        <FiTruck className="w-8 h-8 text-blue-600 mb-3" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Lihat Kurir</h3>
+                        <p className="text-gray-600 text-sm">
+                            Pantau pengiriman dan rute kurir per tanggal
+                        </p>
+                    </Link>
+
+                    <Link to="/route" className="card hover:shadow-lg transition-shadow cursor-pointer">
                         <FiMap className="w-8 h-8 text-purple-600 mb-3" />
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Optimasi Rute</h3>
                         <p className="text-gray-600 text-sm">
                             Hitung dan optimasi rute pengiriman menggunakan CIH
                         </p>
                     </Link>
-
-                    <div className="card bg-primary-50 border-primary-200">
-                        <FiCheckCircle className="w-8 h-8 text-primary-600 mb-3" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Akses SPV</h3>
-                        <p className="text-gray-600 text-sm">
-                            Anda dapat melihat data dan melakukan optimasi rute
-                        </p>
-                    </div>
                 </div>
             </div>
         );
@@ -357,10 +357,10 @@ const Dashboard: React.FC = () => {
                                                 </h3>
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-semibold ${delivery.status?.status_kirim === 'Delivered'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : delivery.status?.status_kirim === 'In Progress'
-                                                                ? 'bg-blue-100 text-blue-800'
-                                                                : 'bg-yellow-100 text-yellow-800'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : delivery.status?.status_kirim === 'In Progress'
+                                                            ? 'bg-blue-100 text-blue-800'
+                                                            : 'bg-yellow-100 text-yellow-800'
                                                         }`}
                                                 >
                                                     {delivery.status?.status_kirim || 'Pending'}

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Pengiriman, Kurir, HasilRute, LoginUser
 from services.cih_algorithm import CheapestInsertionHeuristic
+from datetime import datetime
 import json
 
 route_bp = Blueprint('route', __name__)
@@ -15,7 +16,8 @@ def optimize_route():
     Request body:
     {
         "kurir_id": 1,
-        "pengiriman_ids": [1, 2, 3, 4]
+        "pengiriman_ids": [1, 2, 3, 4],
+        "tanggal_kirim": "2026-01-18"  // Optional: date for scheduling
     }
     """
     current_user_id = int(get_jwt_identity())
@@ -30,6 +32,14 @@ def optimize_route():
     # Validate required fields
     if not data.get('kurir_id') or not data.get('pengiriman_ids'):
         return jsonify({'error': 'kurir_id and pengiriman_ids are required'}), 400
+    
+    # Parse tanggal_kirim if provided
+    tanggal_kirim = None
+    if data.get('tanggal_kirim'):
+        try:
+            tanggal_kirim = datetime.strptime(data['tanggal_kirim'], '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
     
     # Get kurir
     kurir = Kurir.query.get(data['kurir_id'])
@@ -60,26 +70,29 @@ def optimize_route():
         
         # Get depot location (kurir's base)
         if kurir.latitude_kurir and kurir.longitude_kurir:
-            depot = (kurir.latitude_kurir, kurir.longitude_kurir)
+            depot = (float(kurir.latitude_kurir), float(kurir.longitude_kurir))
         else:
             # Default depot if not set
             depot = (-6.2088, 106.8456)  # Jakarta center
         
-        # Run CIH algorithm
+        # Run CIH algorithm (calculate_optimal_route expects depot first, then delivery locations)
         cih = CheapestInsertionHeuristic()
         result = cih.calculate_optimal_route(depot, delivery_locations)
         
-        # Save to database
+        # Save to database with tanggal_rute
         hasil_rute = HasilRute(
             id_kurir=kurir.id_kurir,
             total_jarak=result['total_distance'],
-            urutan_pengiriman=json.dumps(result['route'])
+            urutan_pengiriman=json.dumps(result['route']),
+            tanggal_rute=tanggal_kirim
         )
         db.session.add(hasil_rute)
         
-        # Update pengiriman to assign to kurir
+        # Update pengiriman to assign to kurir and set tanggal_kirim
         for p in pengiriman_list:
             p.id_kirim_kurir = kurir.id_kurir
+            if tanggal_kirim:
+                p.tanggal_kirim = tanggal_kirim
         
         db.session.commit()
         
@@ -103,7 +116,8 @@ def optimize_route():
             'total_distance': result['total_distance'],
             'route_segments': result.get('route_segments', []),
             'distance_matrix': result.get('distance_matrix', {}),
-            'hasil_id': hasil_rute.id_hasil
+            'hasil_id': hasil_rute.id_hasil,
+            'tanggal_kirim': tanggal_kirim.isoformat() if tanggal_kirim else None
         }), 200
         
     except Exception as e:
@@ -179,3 +193,89 @@ def get_my_route():
         'ordered_deliveries': ordered_deliveries,
         'total_distance': latest_route.total_jarak
     }), 200
+
+
+@route_bp.route('/kurir-route/<int:kurir_id>', methods=['GET'])
+@jwt_required()
+def get_kurir_route(kurir_id):
+    """Get the route for a specific kurir (for SPV view), optionally filtered by date"""
+    current_user_id = int(get_jwt_identity())
+    current_user = LoginUser.query.get(current_user_id)
+    
+    # Only admin and SPV can view kurir routes
+    if current_user.status_login not in ['admin', 'spv']:
+        return jsonify({'error': 'Admin or SPV access required'}), 403
+    
+    # Get kurir
+    kurir = Kurir.query.get(kurir_id)
+    if not kurir:
+        return jsonify({'error': 'Kurir not found'}), 404
+    
+    # Parse date filter if provided
+    date_str = request.args.get('tanggal')
+    tanggal_filter = None
+    if date_str:
+        try:
+            tanggal_filter = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+    
+    # Get route for this kurir
+    query = HasilRute.query.filter_by(id_kurir=kurir_id)
+    
+    if tanggal_filter:
+        query = query.filter_by(tanggal_rute=tanggal_filter)
+    
+    latest_route = query.order_by(HasilRute.id_hasil.desc()).first()
+    
+    if not latest_route:
+        return jsonify({
+            'message': 'No route found for this kurir',
+            'kurir': kurir.to_dict(),
+            'route': None,
+            'ordered_deliveries': [],
+            'total_distance': 0
+        }), 200
+    
+    # Get deliveries for this kurir
+    delivery_query = Pengiriman.query.filter_by(id_kirim_kurir=kurir_id)
+    if tanggal_filter:
+        delivery_query = delivery_query.filter_by(tanggal_kirim=tanggal_filter)
+    deliveries = delivery_query.all()
+    
+    # Parse route order
+    try:
+        route_order = json.loads(latest_route.urutan_pengiriman)
+        delivery_dict = {d.id_kirim: d for d in deliveries}
+        ordered_deliveries = []
+        for delivery_id in route_order:
+            if delivery_id in delivery_dict:
+                d = delivery_dict[delivery_id]
+                ordered_deliveries.append({
+                    'id_kirim': d.id_kirim,
+                    'nama_penerima': d.nama_penerima,
+                    'alamat_penerima': d.alamat_penerima,
+                    'latitude_kirim': float(d.latitude_kirim) if d.latitude_kirim else None,
+                    'longitude_kirim': float(d.longitude_kirim) if d.longitude_kirim else None,
+                    'tanggal_kirim': d.tanggal_kirim.isoformat() if d.tanggal_kirim else None,
+                    'status': d.status.to_dict() if d.status else None
+                })
+    except:
+        ordered_deliveries = [{
+            'id_kirim': d.id_kirim,
+            'nama_penerima': d.nama_penerima,
+            'alamat_penerima': d.alamat_penerima,
+            'latitude_kirim': float(d.latitude_kirim) if d.latitude_kirim else None,
+            'longitude_kirim': float(d.longitude_kirim) if d.longitude_kirim else None,
+            'tanggal_kirim': d.tanggal_kirim.isoformat() if d.tanggal_kirim else None,
+            'status': d.status.to_dict() if d.status else None
+        } for d in deliveries]
+    
+    return jsonify({
+        'kurir': kurir.to_dict(),
+        'route': latest_route.to_dict(),
+        'ordered_deliveries': ordered_deliveries,
+        'total_distance': latest_route.total_jarak,
+        'tanggal_rute': latest_route.tanggal_rute.isoformat() if latest_route.tanggal_rute else None
+    }), 200
+

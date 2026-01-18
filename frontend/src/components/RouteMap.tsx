@@ -5,8 +5,8 @@ interface Delivery {
     id_kirim: number;
     nama_penerima: string;
     alamat_penerima: string;
-    latitude_kirim: number;
-    longitude_kirim: number;
+    latitude_kirim: number | string;
+    longitude_kirim: number | string;
 }
 
 interface DepotLocation {
@@ -20,6 +20,13 @@ interface RouteMapProps {
     depot?: DepotLocation;
 }
 
+// Helper function to safely convert to number
+const toNumber = (val: number | string | undefined): number => {
+    if (val === undefined || val === null) return 0;
+    const num = typeof val === 'number' ? val : parseFloat(String(val));
+    return isNaN(num) ? 0 : num;
+};
+
 const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
     if (deliveries.length === 0) {
         return (
@@ -28,6 +35,14 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
             </div>
         );
     }
+
+    // Convert delivery coordinates to numbers
+    const deliveryPoints = deliveries.map(d => ({
+        lat: toNumber(d.latitude_kirim),
+        lng: toNumber(d.longitude_kirim),
+        id: d.id_kirim,
+        nama: d.nama_penerima
+    }));
 
     // Calculate center of map (include depot if available)
     const allPoints = depot
@@ -86,7 +101,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
             )}
 
             {/* Delivery Markers */}
-            {deliveries.map((delivery, index) => (
+            {deliveryPoints.map((point, index) => (
                 <Marker
                     key={`delivery-${delivery.id_kirim}`}
                     position={{ lat: Number(delivery.latitude_kirim), lng: Number(delivery.longitude_kirim) }}
@@ -95,7 +110,7 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
                         color: 'white',
                         fontWeight: 'bold',
                     }}
-                    title={`${index + 1}. ${delivery.nama_penerima}`}
+                    title={`${index + 1}. ${point.nama}`}
                 />
             ))}
 
@@ -114,3 +129,4 @@ const RouteMap: React.FC<RouteMapProps> = ({ deliveries, depot }) => {
 };
 
 export default RouteMap;
+

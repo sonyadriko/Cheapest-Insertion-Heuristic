@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { kurirAPI, pengirimanAPI, routeAPI } from '../services/api';
-import { FiMap, FiCheck, FiLoader } from 'react-icons/fi';
+import { FiMap, FiCheck, FiLoader, FiCalendar } from 'react-icons/fi';
 import RouteMap from '../components/RouteMap';
 
 interface Kurir {
@@ -16,6 +16,7 @@ interface Pengiriman {
     alamat_penerima: string;
     latitude_kirim: number;
     longitude_kirim: number;
+    tanggal_kirim?: string;
 }
 
 interface RouteSegment {
@@ -38,6 +39,7 @@ interface RouteResult {
     route_segments?: RouteSegment[];
     distance_matrix?: DistanceMatrix;
     kurir: Kurir;
+    tanggal_kirim?: string;
 }
 
 const RouteOptimization: React.FC = () => {
@@ -45,21 +47,23 @@ const RouteOptimization: React.FC = () => {
     const [pengirimanList, setPengirimanList] = useState<Pengiriman[]>([]);
     const [selectedKurir, setSelectedKurir] = useState('');
     const [selectedPengiriman, setSelectedPengiriman] = useState<number[]>([]);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Default today
     const [isCalculating, setIsCalculating] = useState(false);
     const [routeResult, setRouteResult] = useState<RouteResult | null>(null);
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [selectedDate]); // Reload when date changes
 
     const loadData = async () => {
         try {
             const [kurirRes, pengirimanRes] = await Promise.all([
                 kurirAPI.getAll(),
-                pengirimanAPI.getUnassigned(),
+                pengirimanAPI.getUnassigned(selectedDate),
             ]);
             setKurirList(kurirRes.data);
             setPengirimanList(pengirimanRes.data);
+            setSelectedPengiriman([]); // Reset selection when data reloads
         } catch (error) {
             console.error('Failed to load data:', error);
         }
@@ -84,6 +88,7 @@ const RouteOptimization: React.FC = () => {
             const response = await routeAPI.optimize({
                 kurir_id: parseInt(selectedKurir),
                 pengiriman_ids: selectedPengiriman,
+                tanggal_kirim: selectedDate,
             });
             setRouteResult(response.data);
             // Reload data to update unassigned list
@@ -109,6 +114,23 @@ const RouteOptimization: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Panel - Selection */}
                 <div className="lg:col-span-1 space-y-6">
+                    {/* Date Selection */}
+                    <div className="card">
+                        <div className="flex items-center gap-2 mb-4">
+                            <FiCalendar className="text-primary-600" />
+                            <h3 className="text-lg font-semibold text-gray-900">Tanggal Pengiriman</h3>
+                        </div>
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="input-field"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                            Pilih tanggal untuk jadwalkan pengiriman
+                        </p>
+                    </div>
+
                     {/* Kurir Selection */}
                     <div className="card">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Pilih Kurir</h3>
@@ -256,7 +278,7 @@ const RouteOptimization: React.FC = () => {
                                                 <p className="font-medium text-gray-900">{delivery.nama_penerima}</p>
                                                 <p className="text-sm text-gray-600 mt-1">{delivery.alamat_penerima}</p>
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    📍 {Number(delivery.latitude_kirim).toFixed(6)}, {Number(delivery.longitude_kirim).toFixed(6)}
+                                                    📍 {delivery.latitude_kirim.toFixed(6)}, {delivery.longitude_kirim.toFixed(6)}
                                                 </p>
                                             </div>
                                         </div>

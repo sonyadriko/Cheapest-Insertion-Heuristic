@@ -9,7 +9,8 @@ import {
     FiLogOut,
     FiMenu,
     FiX,
-    FiUser
+    FiUser,
+    FiEye
 } from 'react-icons/fi';
 
 const Layout: React.FC = () => {
@@ -40,6 +41,7 @@ const Layout: React.FC = () => {
         if (user?.status_login === 'spv') {
             return [
                 ...baseNav,
+                { name: 'Lihat Kurir', href: '/kurir-view', icon: FiEye },
                 { name: 'Route Optimization', href: '/route', icon: FiMap },
             ];
         }

@@ -10,6 +10,7 @@ import KurirManagement from './pages/KurirManagement';
 import PengirimanManagement from './pages/PengirimanManagement';
 import RouteOptimization from './pages/RouteOptimization';
 import UserManagement from './pages/UserManagement';
+import SPVKurirView from './pages/SPVKurirView';
 
 const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ['places'];
 
@@ -60,6 +61,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'spv']}>
                     <RouteOptimization />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="kurir-view"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'spv']}>
+                    <SPVKurirView />
                   </ProtectedRoute>
                 }
               />

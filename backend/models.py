@@ -76,6 +76,7 @@ class Pengiriman(db.Model):
     alamat_penerima = db.Column(db.String(100), nullable=False)
     latitude_kirim = db.Column(db.Numeric(8, 6), nullable=False)
     longitude_kirim = db.Column(db.Numeric(9, 6), nullable=False)
+    tanggal_kirim = db.Column(db.Date, nullable=True)  # Tanggal pengiriman dijadwalkan
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):
@@ -87,6 +88,7 @@ class Pengiriman(db.Model):
             'alamat_penerima': self.alamat_penerima,
             'latitude_kirim': float(self.latitude_kirim),
             'longitude_kirim': float(self.longitude_kirim),
+            'tanggal_kirim': self.tanggal_kirim.isoformat() if self.tanggal_kirim else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'kurir': self.kurir.to_dict() if self.kurir else None,
             'status': self.status.to_dict() if self.status else None
@@ -100,6 +102,7 @@ class HasilRute(db.Model):
     id_kurir = db.Column(db.Integer, db.ForeignKey('data_kurir.id_kurir'), nullable=False)
     urutan_pengiriman = db.Column(db.Text, nullable=False)  # JSON string of delivery IDs in order
     total_jarak = db.Column(db.Float, nullable=False)  # in kilometers
+    tanggal_rute = db.Column(db.Date, nullable=True)  # Tanggal rute dijadwalkan
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):
@@ -109,5 +112,7 @@ class HasilRute(db.Model):
             'id_kurir': self.id_kurir,
             'urutan_pengiriman': json.loads(self.urutan_pengiriman),
             'total_jarak': self.total_jarak,
+            'tanggal_rute': self.tanggal_rute.isoformat() if self.tanggal_rute else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+

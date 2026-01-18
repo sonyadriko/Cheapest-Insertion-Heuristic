@@ -52,8 +52,10 @@ export const kurirAPI = {
 export const pengirimanAPI = {
     getAll: () => api.get('/pengiriman'),
     getById: (id: number) => api.get(`/pengiriman/${id}`),
-    getByKurir: (kurirId: number) => api.get(`/pengiriman/kurir/${kurirId}`),
-    getUnassigned: () => api.get('/pengiriman/unassigned'),
+    getByKurir: (kurirId: number, tanggal?: string) =>
+        api.get(`/pengiriman/kurir/${kurirId}${tanggal ? `?tanggal=${tanggal}` : ''}`),
+    getUnassigned: (tanggal?: string) =>
+        api.get(`/pengiriman/unassigned${tanggal ? `?tanggal=${tanggal}` : ''}`),
     getMyDeliveries: () => api.get('/pengiriman/my-deliveries'),
     create: (data: any) => api.post('/pengiriman', data),
     update: (id: number, data: any) => api.put(`/pengiriman/${id}`, data),
@@ -62,11 +64,13 @@ export const pengirimanAPI = {
 
 // Route Optimization API
 export const routeAPI = {
-    optimize: (data: { kurir_id: number; pengiriman_ids: number[] }) =>
+    optimize: (data: { kurir_id: number; pengiriman_ids: number[]; tanggal_kirim?: string }) =>
         api.post('/route/optimize', data),
     getHistory: () => api.get('/route/history'),
     getMyRoute: () => api.get('/route/my-route'),
     getDetail: (id: number) => api.get(`/route/history/${id}`),
+    getKurirRoute: (kurirId: number, tanggal?: string) =>
+        api.get(`/route/kurir-route/${kurirId}${tanggal ? `?tanggal=${tanggal}` : ''}`),
 };
 
 // User Management API
